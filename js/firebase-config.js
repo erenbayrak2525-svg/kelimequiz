@@ -7,10 +7,10 @@
 // göndermekte sakınca yoktur.
 
 export const firebaseConfig = {
-  apiKey: "BURAYA_API_KEY",
-  authDomain: "BURAYA_PROJE.firebaseapp.com",
-  projectId: "BURAYA_PROJE",
-  storageBucket: "BURAYA_PROJE.appspot.com",
-  messagingSenderId: "BURAYA_SENDER_ID",
-  appId: "BURAYA_APP_ID"
+  apiKey: "AIzaSyD4ATAhgjSEgYjshRF1VxCqx6qKR-OQbdA",
+  authDomain: "language-c6ba7.firebaseapp.com",
+  projectId: "language-c6ba7",
+  storageBucket: "language-c6ba7.firebasestorage.app",
+  messagingSenderId: "93957947057",
+  appId: "1:93957947057:web:9d651daebf5bd08dce2c90"
 };

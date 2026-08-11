@@ -15,16 +15,16 @@ Herhangi bir build aracı (Vite, npm, vs.) gerekmez — düz HTML/CSS/JS. GitHub
 
 1. https://console.firebase.google.com adresine git, **Add project** ile yeni proje oluştur.
 2. Sol menüden **Build → Firestore Database** → **Create database** → production mode (kurallar aşağıda) → bir bölge seç.
-3. Sol menüden **Build → Authentication** → **Get started** → **Sign-in method** sekmesinden **Anonymous** sağlayıcısını aktif et.
-   - Bu uygulama seni tanımlamak için hesap/şifre istemiyor; tarayıcıya sessizce anonim bir kimlik atanıyor. Aşağıdaki güvenlik kuralıyla bu kimliği sadece sana kilitliyoruz.
-4. Proje ayarları (dişli ikonu) → **Project settings** → **Your apps** → **</> (Web)** ikonuyla yeni bir web app kaydet (Firebase Hosting'i işaretlemene gerek yok).
-5. Sana verilen `firebaseConfig` nesnesini kopyala, `js/firebase-config.js` dosyasındaki alanların yerine yapıştır.
+3. Sol menüden **Build → Authentication** → **Get started** → **Sign-in method** sekmesinden **Email/Password** sağlayıcısını aktif et.
+4. Aynı ekranda **Users** sekmesine geç → **Add user** → kendi e-postanı ve bir şifre gir. Bu, uygulamaya giriş yaparken kullanacağın hesap. (Kayıt ol ekranı yok, sadece Firebase konsolundan sen kendi hesabını oluşturuyorsun — böylece başka kimse hesap açamıyor.)
+5. Proje ayarları (dişli ikonu) → **Project settings** → **Your apps** → **</> (Web)** ikonuyla yeni bir web app kaydet (Firebase Hosting'i işaretlemene gerek yok).
+6. Sana verilen `firebaseConfig` nesnesini kopyala, `js/firebase-config.js` dosyasındaki alanların yerine yapıştır.
 
-> Not: Bu config değerleri (`apiKey`, `projectId` vb.) gizli anahtar değildir, Firebase web uygulamalarında tarayıcıda görünmeleri normaldir. Bunları GitHub'a göndermekte sakınca yok. Asıl koruma bir sonraki adımdaki **Firestore kuralları**.
+> Not: Bu config değerleri (`apiKey`, `projectId` vb.) gizli anahtar değildir, Firebase web uygulamalarında tarayıcıda görünmeleri normaldir. Bunları GitHub'a göndermekte sakınca yok. Asıl koruma bir sonraki adımdaki **Firestore kuralları** ve giriş ekranı.
 
 ## 2) Firestore güvenlik kuralları
 
-Firestore → **Rules** sekmesine git, önce şu basit kuralla başla (herkesin anonim girişi kabul ama sadece giriş yapmış biri okur/yazar):
+Firestore → **Rules** sekmesine git, şu kuralı yapıştır (sadece giriş yapmış — yani e-posta/şifresini bilen — kullanıcı okuyup yazabilir):
 
 ```
 rules_version = '2';
@@ -37,18 +37,7 @@ service cloud.firestore {
 }
 ```
 
-Bunu yayınla, siteyi bir kere aç (otomatik anonim giriş yapılacak), sonra **Ayarlar** sayfasına git — orada senin anonim kullanıcı ID'n (`uid`) yazacak. O ID'yi kopyalayıp kuralı şuna güncelle (artık sadece SEN erişebilirsin, başka biri linki bulsa bile giremez):
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == "BURAYA_KENDI_UID_INI_YAPISTIR";
-    }
-  }
-}
-```
+Tek kullanıcı olduğu ve o kullanıcıyı sen konsoldan elle oluşturduğun için bu kural yeterli. Ekstra sıkılaştırmak istersen, giriş yaptıktan sonra **Ayarlar** sayfasında görünen kullanıcı ID'ni (`uid`) alıp kuralı `request.auth.uid == "BURAYA_UID"` ile daraltabilirsin.
 
 ## 3) Gemini (yapay zeka) API anahtarı
 

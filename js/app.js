@@ -1,4 +1,4 @@
-import { authReady, currentUid } from "./firebase-init.js";
+import { onAuthChange, login, logout, currentUid, currentEmail } from "./firebase-init.js";
 import {
   listenLanguages,
   addLanguage,
@@ -99,11 +99,18 @@ function renderShell() {
             <li><a href="#/settings" class="nav-link" data-route="settings">Ayarlar</a></li>
           </ul>
         </nav>
+
+        <div class="sidebar__footer">
+          <button class="btn btn--ghost btn--sm" id="btn-sidebar-logout">Çıkış yap</button>
+        </div>
       </aside>
       <main class="main" id="main"></main>
     </div>
   `;
   document.getElementById("btn-add-lang").addEventListener("click", showAddLanguageModal);
+  document.getElementById("btn-sidebar-logout").addEventListener("click", () => {
+    logout().catch((err) => toast("Çıkış yapılamadı: " + err.message, "error"));
+  });
 }
 
 function renderSidebarLangs() {
@@ -554,6 +561,7 @@ function renderQuizResult() {
 function renderSettings() {
   const main = document.getElementById("main");
   const uid = currentUid();
+  const email = currentEmail() || "";
   main.innerHTML = `
     <div class="page-head">
       <h1>Ayarlar</h1>
@@ -571,9 +579,12 @@ function renderSettings() {
     </form>
 
     <div class="settings-uid">
-      <h3>Firestore güvenliği için kullanıcı ID'n</h3>
-      <p class="muted">Bu, tarayıcının anonim Firebase kimliğidir. Verilerini sadece kendine kilitlemek istiyorsan bu ID'yi Firestore kurallarına ekle (README.md içinde anlatılıyor).</p>
-      <code class="uid-box">${uid ? esc(uid) : "Yükleniyor…"}</code>
+      <h3>Hesap</h3>
+      <p class="muted">Giriş yapılan e-posta: <strong>${esc(email)}</strong></p>
+      <code class="uid-box">${uid ? esc(uid) : ""}</code>
+      <div class="modal__actions modal__actions--start" style="margin-top:14px">
+        <button type="button" class="btn btn--ghost" id="btn-logout">Çıkış yap</button>
+      </div>
     </div>
   `;
 
@@ -582,6 +593,49 @@ function renderSettings() {
     const key = new FormData(e.target).get("key").toString();
     setGeminiKey(key);
     toast("Kaydedildi.", "success");
+  });
+
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    logout().catch((err) => toast("Çıkış yapılamadı: " + err.message, "error"));
+  });
+}
+
+// ---------------- Login view ----------------
+function renderLogin() {
+  root.innerHTML = `
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="brand brand--center">
+          <span class="brand__mark">V</span>
+          <span class="brand__name">Kelime Defteri</span>
+        </div>
+        <p class="login-sub">Devam etmek için giriş yap.</p>
+        <form id="form-login">
+          <label class="field">
+            <span>E-posta</span>
+            <input type="email" name="email" required autofocus placeholder="ornek@eposta.com" />
+          </label>
+          <label class="field">
+            <span>Şifre</span>
+            <input type="password" name="password" required placeholder="••••••••" />
+          </label>
+          <p class="modal__hint" id="login-hint"></p>
+          <button type="submit" class="btn btn--primary login-btn">Giriş yap</button>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("form-login").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const hint = document.getElementById("login-hint");
+    hint.textContent = "Giriş yapılıyor…";
+    try {
+      await login(fd.get("email").toString(), fd.get("password").toString());
+    } catch (err) {
+      hint.textContent = "Giriş başarısız: e-posta veya şifre hatalı.";
+    }
   });
 }
 
@@ -614,34 +668,49 @@ function render() {
 window.addEventListener("hashchange", render);
 
 // ---------------- Boot ----------------
-async function boot() {
+let unsubLanguages = null;
+let appStarted = false;
+
+function teardown() {
+  if (unsubWords) { unsubWords(); unsubWords = null; }
+  if (unsubLanguages) { unsubLanguages(); unsubLanguages = null; }
+  state.languages = [];
+  state.words = [];
+  state.quiz = null;
+  appStarted = false;
+}
+
+function startApp() {
+  if (appStarted) return;
+  appStarted = true;
   renderShell();
-  document.getElementById("main").innerHTML = `<p class="muted" style="padding:32px">Bağlanıyor…</p>`;
-  try {
-    await authReady;
-  } catch (err) {
-    document.getElementById("main").innerHTML = `<div class="page-head"><h1>Firebase bağlantı hatası</h1><p class="page-sub">${esc(
-      err.message
-    )}</p></div>`;
-    return;
-  }
-  listenLanguages((langs) => {
+  document.getElementById("main").innerHTML = `<p class="muted" style="padding:32px">Yükleniyor…</p>`;
+
+  unsubLanguages = listenLanguages((langs) => {
     state.languages = langs;
     renderSidebarLangs();
-    // Ana içerik ilk kez yükleniyorsa render et
     if (!document.getElementById("main").dataset.booted) {
       document.getElementById("main").dataset.booted = "1";
       render();
-    } else if (currentRoute().length === 0 || currentRoute()[0] === "quiz") {
-      // home ya da quiz-select ekranındaysak dil listesi değiştiğinde tazele
+    } else if (currentRoute().length === 0 || (currentRoute()[0] === "quiz" && !currentRoute()[1])) {
       if (currentRoute().length === 0) renderHome();
-      if (currentRoute()[0] === "quiz" && !currentRoute()[1]) renderQuizHome();
+      else renderQuizHome();
     }
   });
+}
 
+function boot() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
+  onAuthChange((user) => {
+    if (user) {
+      startApp();
+    } else {
+      teardown();
+      renderLogin();
+    }
+  });
 }
 
 boot();

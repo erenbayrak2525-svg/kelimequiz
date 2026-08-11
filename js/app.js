@@ -79,7 +79,11 @@ function currentRoute() {
 function renderShell() {
   root.innerHTML = `
     <div class="shell">
-      <aside class="sidebar">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Menüyü aç">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+      <aside class="sidebar" id="sidebar">
         <div class="brand">
           <span class="brand__mark">V</span>
           <span class="brand__name">Kelime Defteri</span>
@@ -110,6 +114,27 @@ function renderShell() {
   document.getElementById("btn-add-lang").addEventListener("click", showAddLanguageModal);
   document.getElementById("btn-sidebar-logout").addEventListener("click", () => {
     logout().catch((err) => toast("Çıkış yapılamadı: " + err.message, "error"));
+  });
+
+  const sidebar = document.getElementById("sidebar");
+  const backdrop = document.getElementById("sidebar-backdrop");
+  const toggle = document.getElementById("menu-toggle");
+  const openDrawer = () => {
+    sidebar.classList.add("is-open");
+    backdrop.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  };
+  const closeDrawer = () => {
+    sidebar.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+    document.body.style.overflow = "";
+  };
+  toggle.addEventListener("click", () => {
+    sidebar.classList.contains("is-open") ? closeDrawer() : openDrawer();
+  });
+  backdrop.addEventListener("click", closeDrawer);
+  sidebar.addEventListener("click", (e) => {
+    if (e.target.closest("a")) closeDrawer();
   });
 }
 

@@ -2,7 +2,7 @@
 // API anahtarı tarayıcıda localStorage içinde tutulur, hiçbir zaman
 // koda veya repoya gömülmez.
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-flash-latest";
 const ENDPOINT = (key) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
 
